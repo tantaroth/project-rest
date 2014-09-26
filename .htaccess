@@ -1,0 +1,5 @@
+<IfModule mod_rewrite.c>
+Options +FollowSymLinks
+RewriteEngine On     # esto le dice a apache que active a mod_rewrite para este website
+RewriteRule [a-z0-9-]+(.[a-z0-9-]+)*(:[0-9]+)?(/.*)?$|i index.php [L]      # es es una regla de sobreescritura
+</IfModule>
