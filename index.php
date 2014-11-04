@@ -2,28 +2,26 @@
 header('Content-Type: application/json');
 
 class DBRest {
-    var $json, $db, $query;  // Objetos en nuestro carrito de compras
+    var $json, $db, $params;  // Objetos en nuestro carrito de compras
 
     function DBRest($db){
         $this->db = $db;
-        $this->query = $_GET['query'];
-        $this->query = (preg_match("#^/#", $this->query)) ? substr($this->query, 1, strlen($this->query)) : $this->query;
-        $this->query = (preg_match("#/$#", $this->query)) ? substr($this->query, 0, strlen($this->query)-1) : $this->query;
-		$this->json = file_get_contents($this->db);
-	}
+        $this->json = file_get_contents($this->db);
+    }
 
     // ver nodes
     // ?query=users/tantaroth/about
-    function get_node() {
+    function get($PARAMS = '*') {
         $this->json = json_decode($this->json, true);
+        $this->params = (is_array($PARAMS)) ? (($PARAMS[0] == '') ? '*' : $PARAMS) : $PARAMS;
         $result = $this->json;
         
-        if($this->query != '/'){
-            $replace = str_replace('/', '"]["', $this->query);
-    		eval('$result = $this->json["'.$replace.'"];');
+        if(is_array($this->params)){
+            $replace = str_replace('/', '"]["', $this->params);
+            eval('$result = $this->json'.json_encode($this->params).';');
         }
 
-		return json_encode($result, JSON_PRETTY_PRINT);
+        return json_encode($result, JSON_PRETTY_PRINT);
     }
 
     // Agregar nodes
@@ -53,23 +51,38 @@ class DBRest {
                 }
             }
     
-    		return json_encode($this->json, JSON_PRETTY_PRINT);
+            return json_encode($this->json, JSON_PRETTY_PRINT);
         }
     }
 }
+$init = 2;
 $exp_url = split('/',$_SERVER[REQUEST_URI]);
-echo $exp_url[1];
+$QUERY_URL = $exp_url[$init++];
+$PARAMS = array();
+echo $exp_url[$init];
 echo "------";
 echo $_SERVER[REQUEST_URI];
 
-print_r($_REQUEST);
-
-$_GET['f'] = (isset($_GET['f']))?$_GET['f']:'get_node';
-$_GET['p'] = (isset($_GET['p']))?$_GET['p']:'';
+if(
+    $QUERY_URL == 'get' ||
+    $QUERY_URL == 'add' ||
+    $QUERY_URL == 'edit' ||
+    $QUERY_URL == 'remove'
+){
+    $QUERY = $QUERY_URL;
+    for($iQUERY=$init+2;$iQUERY<count($exp_url);$iQUERY++){
+        $PARAMS[] = $exp_url[$iQUERY];
+    }
+}else{
+    $QUERY = 'get';
+    for($iQUERY=$init++;$iQUERY<count($exp_url);$iQUERY++){
+        $PARAMS[] = $exp_url[$iQUERY];
+    }
+}
 
 $_DBRest = new DBRest('db.json');
 
-echo $_DBRest->$_GET['f']($_GET['p']);
+echo '>> '.$_DBRest->$QUERY($PARAMS);
 /*echo "<pre>";
 print_r($_DBRest->$_GET['f']($_GET['p']));*/
 ?>
