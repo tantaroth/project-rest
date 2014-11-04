@@ -10,15 +10,15 @@ class DBRest {
     }
 
     // ver nodes
-    // ?query=users/tantaroth/about
+    // /get/users/tantaroth/about
     function get($PARAMS = '*') {
         $this->json = json_decode($this->json, true);
         $this->params = (is_array($PARAMS)) ? (($PARAMS[0] == '') ? '*' : $PARAMS) : $PARAMS;
         $result = $this->json;
         
         if(is_array($this->params)){
-            $replace = str_replace('/', '"]["', $this->params);
-            eval('$result = $this->json'.json_encode($this->params).';');
+            $replace = str_replace('","', '"]["', json_encode($this->params));
+            eval('$result = $this->json'.$replace.';');
         }
 
         return json_encode($result, JSON_PRETTY_PRINT);
