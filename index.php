@@ -12,12 +12,12 @@ class DBRest {
     // ver nodes
     // /get/users/tantaroth/about
     function get($PARAMS = '*') {
+        $PARAMS = (is_array($PARAMS)) ? (($PARAMS[0] == '') ? '*' : $PARAMS) : $PARAMS;
         $this->json = json_decode($this->json, true);
-        $this->params = (is_array($PARAMS)) ? (($PARAMS[0] == '') ? '*' : $PARAMS) : $PARAMS;
         $result = $this->json;
-        
-        if(is_array($this->params)){
-            $replace = str_replace('","', '"]["', json_encode($this->params));
+
+        if(is_array($PARAMS)){
+            $replace = str_replace('","', '"]["', json_encode($PARAMS));
             eval('$result = $this->json'.$replace.';');
         }
 
@@ -25,23 +25,33 @@ class DBRest {
     }
 
     // Agregar nodes
-    //?f=add_node&p={"saludo":{"saludo":"hola"}}&query=users/tantaroth/about
-    function add_node($new_node) {
+    // /edit/{"saludo":{"saludo":"hola"}}/users/tantaroth/about
+    function edit($PARAMS = '*') {
+        $new_node = urldecode($PARAMS[0]);
+        $arr_query = array();
+
         if(!empty($new_node)){
             $this->json = json_decode($this->json, true);
             $json = $this->json;
+
+            if (!empty($PARAMS[1])) {
+                for ($iPARAMS=1; $iPARAMS < count($PARAMS); $iPARAMS++) { 
+                    $arr_query[] = $PARAMS[$iPARAMS];
+                    $PARAMS[$iPARAMS];
+                }
+            }
             
-            $replace_query = str_replace('/', '"]["', $this->query);
+            $query = str_replace('","', '"]["', json_encode($arr_query));
             
             if(is_array(json_decode($new_node, true))){
                 $new_node = str_replace('{', 'array(', $new_node);
                 $new_node = str_replace('}', ')', $new_node);
                 $new_node = str_replace(':', '=>', $new_node);
-                
-                eval('$this->json["'.$replace_query.'"] = '.$new_node.';');
-            }else eval('$this->json["'.$replace_query.'"] = "'.$new_node.'";');
+
+                eval('$this->json'.$query.' = '.$new_node.';');
+            }else eval('$this->json'.$query.' = "'.$new_node.'";');
             
-            eval('$this->json["'.$replace_query.'"] = "'.$new_node.'";');
+            eval('$this->json'.$query.' = "'.$new_node.'";');
             
             if (file_exists($this->db)) {
                 chmod($this->db, 0666);
@@ -56,12 +66,9 @@ class DBRest {
     }
 }
 $init = 2;
-$exp_url = split('/',$_SERVER[REQUEST_URI]);
-$QUERY_URL = $exp_url[$init++];
+$exp_url = split('/', ((substr($_SERVER[REQUEST_URI], -1) == '/') ? substr($_SERVER[REQUEST_URI], 0, -1) : $_SERVER[REQUEST_URI]) );
+$QUERY_URL = $exp_url[$init+1];
 $PARAMS = array();
-echo $exp_url[$init];
-echo "------";
-echo $_SERVER[REQUEST_URI];
 
 if(
     $QUERY_URL == 'get' ||
@@ -75,7 +82,7 @@ if(
     }
 }else{
     $QUERY = 'get';
-    for($iQUERY=$init++;$iQUERY<count($exp_url);$iQUERY++){
+    for($iQUERY=$init+1;$iQUERY<count($exp_url);$iQUERY++){
         $PARAMS[] = $exp_url[$iQUERY];
     }
 }
